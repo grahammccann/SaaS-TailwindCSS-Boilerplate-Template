@@ -286,6 +286,7 @@ function sendEmail($to, $subject, $body, $headers = []) {
     return mail($to, $subject, $body, $headersString);
 }
 
+<?php
 /**
  * Sends a verification email to the user.
  *
@@ -294,10 +295,12 @@ function sendEmail($to, $subject, $body, $headers = []) {
  */
 function sendVerificationEmail($email, $token) {
     $siteSettings = getSiteSettings();  // Fetch site settings
-    $siteName = $siteSettings['site_name'] ?? 'Your Site Name';
+    $siteName = $siteSettings['site_name'] ?? 'My SaaS Application';
+    $siteIcon = $siteSettings['site_icon'] ?? 'fas fa-globe'; // Default icon
+    $siteUrl = fullUrl();
 
     // Verification link
-    $verificationLink = fullUrl() . 'verify-email.php?token=' . urlencode($token);
+    $verificationLink = $siteUrl . 'verify-email.php?token=' . urlencode($token);
 
     // Email subject and body
     $subject = "Verify your email for " . $siteName;
@@ -306,12 +309,27 @@ function sendVerificationEmail($email, $token) {
     <head>
         <title>Verify Your Email</title>
     </head>
-    <body>
-        <p>Hello,</p>
-        <p>Please click the link below to verify your email address:</p>
-        <p><a href='" . htmlspecialchars($verificationLink, ENT_QUOTES, 'UTF-8') . "'>Verify Email</a></p>
-        <p>If you didn't sign up for this account, please ignore this email.</p>
-        <p>Thanks,<br>$siteName</p>
+    <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;'>
+        <!-- Logo with Font Awesome Icon -->
+        <div style='text-align: center; margin-bottom: 20px;'>
+            <div style='font-size: 24px; font-weight: bold; color: #4F46E5; display: inline-flex; align-items: center;'>
+                <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "' style='text-decoration: none; color: #4F46E5;'>
+                    <i class='" . htmlspecialchars($siteIcon, ENT_QUOTES, 'UTF-8') . "' style='margin-right: 8px;'></i>
+                    " . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "
+                </a>
+            </div>
+        </div>
+
+        <!-- Main email content inside the white box -->
+        <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto;'>
+            <p>Hello,</p>
+            <p>Please click the link below to verify your email address:</p>
+            <p style='text-align: center;'>
+                <a href='" . htmlspecialchars($verificationLink, ENT_QUOTES, 'UTF-8') . "' style='display: inline-block; padding: 10px 20px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 5px;'>Verify Email</a>
+            </p>
+            <p>If you didn't sign up for this account, please ignore this email.</p>
+            <p>Thanks,<br>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</p>
+        </div>
     </body>
     </html>
     ";
@@ -328,27 +346,94 @@ function sendVerificationEmail($email, $token) {
 function sendPasswordResetEmail($email, $token) {
     $siteSettings = getSiteSettings();  // Fetch site settings
     $siteName = $siteSettings['site_name'] ?? 'Your Site Name';
+    $siteIcon = $siteSettings['site_icon'] ?? 'fas fa-globe'; // Default icon
+    $siteUrl = fullUrl();
 
     // Password reset link
-    $resetLink = fullUrl() . 'reset-password.php?token=' . urlencode($token);
+    $resetLink = $siteUrl . 'reset-password.php?token=' . urlencode($token);
 
-    // Email subject and body
+    // Email subject and body with a clean, boxed layout
     $subject = "Password Reset Request for " . $siteName;
     $body = "
     <html>
     <head>
         <title>Password Reset</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+                text-align: center;
+                padding: 10px 0;
+            }
+            .header h1 {
+                color: #333333;
+                font-size: 24px;
+                margin: 0;
+            }
+            .content {
+                padding: 20px;
+                text-align: center;
+                color: #333333;
+                font-size: 16px;
+            }
+            .btn {
+                background-color: #4F46E5;
+                color: #ffffff;
+                padding: 10px 20px;
+                text-decoration: none;
+                border-radius: 5px;
+                display: inline-block;
+                margin-top: 20px;
+            }
+            .footer {
+                text-align: center;
+                font-size: 12px;
+                color: #888888;
+                margin-top: 20px;
+            }
+        </style>
     </head>
     <body>
-        <p>Hello,</p>
-        <p>We received a request to reset your password. Please click the link below to set a new password:</p>
-        <p><a href='" . htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8') . "'>Reset Password</a></p>
-        <p>If you didn't request a password reset, please ignore this email.</p>
-        <p>Thanks,<br>$siteName</p>
+        <div style='text-align: center; margin-bottom: 20px;'>
+            <!-- Logo with Font Awesome Icon -->
+            <div style='font-size: 24px; font-weight: bold; color: #4F46E5; display: inline-flex; align-items: center;'>
+                <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "' style='text-decoration: none; color: #4F46E5;'>
+                    <i class='" . htmlspecialchars($siteIcon, ENT_QUOTES, 'UTF-8') . "' style='margin-right: 8px;'></i>
+                    " . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "
+                </a>
+            </div>
+        </div>
+        <div class='container'>
+            <div class='header'>
+                <h1>Password Reset</h1>
+            </div>
+            <div class='content'>
+                <p>Hi,</p>
+                <p>You requested to reset your password for your account on $siteName. Click the button below to reset it:</p>
+                <a href='" . htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8') . "' class='btn'>Reset Your Password</a>
+                <p>If you did not request this password reset, please ignore this email.</p>
+            </div>
+            <div class='footer'>
+                <p>&copy; " . date('Y') . " $siteName. All rights reserved.</p>
+            </div>
+        </div>
     </body>
     </html>
     ";
 
     sendEmail($email, $subject, $body);
 }
+
 ?>

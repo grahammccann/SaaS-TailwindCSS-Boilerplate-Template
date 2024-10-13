@@ -147,6 +147,19 @@ include(__DIR__ . "/includes/inc-header.php");
             >
         </div>
 
+        <!-- Contact Email Field -->
+        <div class="mb-4">
+            <label for="contact_email" class="block text-gray-700 font-bold mb-2">Contact Email:</label>
+            <input 
+                type="email" 
+                id="contact_email" 
+                name="contact_email" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+                value="<?= htmlspecialchars($siteSettings['contact_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+            >
+        </div>
+
         <!-- Site Icon Field -->
         <div class="mb-4">
             <label for="site_icon" class="block text-gray-700 font-bold mb-2">Site Icon (FontAwesome Icon Class):</label>
