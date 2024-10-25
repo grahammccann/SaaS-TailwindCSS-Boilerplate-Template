@@ -1,5 +1,5 @@
 <?php
-// File: inc-footer.php
+// File: includes/inc-footer.php
 ?>
 
 <footer class="bg-gray-900 text-white mt-auto">
@@ -11,7 +11,7 @@
             <div>
                 <h3 class="text-lg font-semibold text-white mb-4">Company Info</h3>
                 <p class="text-gray-400">
-                    &copy; <?= date('Y'); ?> <a href="<?= htmlspecialchars(fullUrl(), ENT_QUOTES, 'UTF-8'); ?>" class="hover:text-white"><?= htmlspecialchars($siteSettings['site_name'] ?? 'My SaaS Application', ENT_QUOTES, 'UTF-8'); ?></a>. All rights reserved.
+                    &copy; <?= date('Y'); ?> - <a href="<?= htmlspecialchars(fullUrl(), ENT_QUOTES, 'UTF-8'); ?>" class="hover:text-white"><?= htmlspecialchars($siteSettings['site_name'] ?? 'My SaaS Application', ENT_QUOTES, 'UTF-8'); ?></a> - All rights reserved.
                 </p>
             </div>
 
@@ -54,6 +54,12 @@
 
 <!-- Include Google reCAPTCHA JavaScript API -->
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<!-- Include JQuery BEFORE saas.js -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Include Custom JavaScript AFTER jQuery -->
+<script src="<?= fullUrl(); ?>js/saas.js" async defer></script>
 
 </body>
 </html>

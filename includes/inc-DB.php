@@ -1,4 +1,5 @@
 <?php
+// File: includes/inc-DB.php
 
 class DB
 {

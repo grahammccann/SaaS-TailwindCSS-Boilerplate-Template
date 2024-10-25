@@ -1,5 +1,5 @@
 <?php
-// File: inc-header.php
+// File: includes/inc-header.php
 
 if (session_status() == PHP_SESSION_NONE) {
     session_start();

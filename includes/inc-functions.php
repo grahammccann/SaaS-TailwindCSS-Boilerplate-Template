@@ -1,7 +1,68 @@
 <?php
+// File: includes/inc-functions.php
+
 /**
- * Utility Functions for your SaaS application
+ * Generates the sitemap.xml and robots.txt files for the website.
+ * 
+ * @param string $baseUrl       The base URL of the site (e.g., https://example.com/). 
+ *                              Defaults to the full URL from the current server environment if not provided.
+ * @param string $documentRoot  The document root of the site (e.g., /var/www/html/). 
+ *                              Defaults to the server's document root if not provided.
  */
+function generateSitemapAndRobots($baseUrl = '', $documentRoot = '') {
+    if (empty($baseUrl)) {
+        $baseUrl = fullUrl(); // Use the full URL if none is provided
+    }
+
+    if (empty($documentRoot)) {
+        $documentRoot = $_SERVER['DOCUMENT_ROOT']; // Ensure this points to the actual root directory
+    }
+
+    // Ensure the document root ends with a trailing slash
+    if (substr($documentRoot, -1) !== '/') {
+        $documentRoot .= '/';
+    }
+
+    // Get all PHP files in the root directory only (no subdirectories)
+    $phpFiles = glob($documentRoot . '*.php'); // This will only get .php files in the root directory
+
+    // Generate sitemap.xml
+    $sitemap = '<?xml version="1.0" encoding="UTF-8"?>' . PHP_EOL;
+    $sitemap .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . PHP_EOL;
+
+    // Ensure the index page is included as the root URL
+    $sitemap .= '    <url>' . PHP_EOL;
+    $sitemap .= '        <loc>' . $baseUrl . '</loc>' . PHP_EOL;
+    $sitemap .= '        <changefreq>daily</changefreq>' . PHP_EOL;
+    $sitemap .= '        <priority>1.0</priority>' . PHP_EOL;
+    $sitemap .= '    </url>' . PHP_EOL;
+
+    // Add other PHP files from the root directory
+    foreach ($phpFiles as $file) {
+        $filePath = str_replace($documentRoot, '', $file);
+
+        // Exclude index.php in the root directory
+        if ($filePath !== 'index.php') {
+            $sitemap .= '    <url>' . PHP_EOL;
+            $sitemap .= '        <loc>' . $baseUrl . ltrim($filePath, '/') . '</loc>' . PHP_EOL;
+            $sitemap .= '        <changefreq>daily</changefreq>' . PHP_EOL;
+            $sitemap .= '        <priority>0.8</priority>' . PHP_EOL;
+            $sitemap .= '    </url>' . PHP_EOL;
+        }
+    }
+
+    $sitemap .= '</urlset>' . PHP_EOL;
+    
+    // Write sitemap.xml to the root directory
+    file_put_contents($documentRoot . 'sitemap.xml', $sitemap);
+
+    // Generate robots.txt
+    $robots = "User-agent: *" . PHP_EOL;
+    $robots .= "Sitemap: " . $baseUrl . "sitemap.xml" . PHP_EOL;
+
+    // Write robots.txt to the root directory
+    file_put_contents($documentRoot . 'robots.txt', $robots);
+}
 
 /**
  * Escapes HTML special characters in a string.
@@ -66,60 +127,45 @@ function getPageMetaData($page) {
     $site_name = isset($site_settings['site_name']) && is_string($site_settings['site_name']) ? $site_settings['site_name'] : 'Your Site Name';
     $baseTitle = $site_name . " | ";
 
-	$metadata = [
-		"/about.php" => [
-			"title" => "About Us",
-			"description" => "Learn more about what we do at {$site_name}."
-		],
-		"/contact.php" => [
-			"title" => "Contact Us",
-			"description" => "Get in touch with the team at {$site_name}."
-		],
-		"/dashboard.php" => [
-			"title" => "Dashboard",
-			"description" => "Manage your account and access exclusive features on {$site_name}."
-		],
-		"/features.php" => [
-			"title" => "Features",
-			"description" => "Explore the features and benefits of using {$site_name}."
-		],
-		"/forgot-password.php" => [
-			"title" => "Forgot Password",
-			"description" => "Reset your {$site_name} password."
-		],
-		"/index.php" => [
-			"title" => "Welcome to {$site_name}",
-			"description" => "Find the best services with {$site_name}."
-		],
-		"/login.php" => [
-			"title" => "Login",
-			"description" => "Access your {$site_name} account."
-		],
-		"/privacy-policy.php" => [
-			"title" => "Privacy Policy",
-			"description" => "Learn about the privacy policy for {$site_name}."
-		],
-		"/reset-password.php" => [
-			"title" => "Reset Password",
-			"description" => "Set a new password for your {$site_name} account."
-		],
-		"/settings.php" => [
-			"title" => "Site Settings",
-			"description" => "Adjust the settings and configurations for {$site_name}."
-		],
-		"/signup.php" => [
-			"title" => "Sign Up",
-			"description" => "Create your {$site_name} account."
-		],
-		"/users.php" => [
-			"title" => "User Management",
-			"description" => "Manage users and permissions for {$site_name}."
-		],
-		"/verify-email.php" => [
-			"title" => "Verify Your Email",
-			"description" => "Verify your email address to activate your {$site_name} account."
-		]
-	];
+    // Retrieve custom meta title and description for the homepage
+    $home_meta_title = $site_settings['home_meta_title'] ?? '';
+    $home_meta_description = $site_settings['home_meta_description'] ?? '';
+
+    $metadata = [
+        "/about.php" => [
+            "title" => "About Us",
+            "description" => "Learn more about what we do at {$site_name}."
+        ],
+        "/contact.php" => [
+            "title" => "Contact Us",
+            "description" => "Get in touch with the team at {$site_name}."
+        ],
+        "/dashboard.php" => [
+            "title" => "Dashboard",
+            "description" => "Manage your account and access exclusive features on {$site_name}."
+        ],
+        "/features.php" => [
+            "title" => "Features",
+            "description" => "Explore the features and benefits of using {$site_name}."
+        ],
+        "/index.php" => [
+            "title" => !empty($home_meta_title) ? $home_meta_title : "Welcome to {$site_name}",
+            "description" => !empty($home_meta_description) ? $home_meta_description : "Find the best services with {$site_name}."
+        ],
+        "/login.php" => [
+            "title" => "Login",
+            "description" => "Access your {$site_name} account."
+        ],
+        "/privacy-policy.php" => [
+            "title" => "Privacy Policy",
+            "description" => "Learn about the privacy policy for {$site_name}."
+        ],
+        "/signup.php" => [
+            "title" => "Sign Up",
+            "description" => "Create your {$site_name} account."
+        ],
+        // Add more pages as needed
+    ];
 
     // Default title and description
     $defaultTitle = "Home";
@@ -286,7 +332,6 @@ function sendEmail($to, $subject, $body, $headers = []) {
     return mail($to, $subject, $body, $headersString);
 }
 
-<?php
 /**
  * Sends a verification email to the user.
  *
@@ -296,39 +341,80 @@ function sendEmail($to, $subject, $body, $headers = []) {
 function sendVerificationEmail($email, $token) {
     $siteSettings = getSiteSettings();  // Fetch site settings
     $siteName = $siteSettings['site_name'] ?? 'My SaaS Application';
-    $siteIcon = $siteSettings['site_icon'] ?? 'fas fa-globe'; // Default icon
     $siteUrl = fullUrl();
 
     // Verification link
     $verificationLink = $siteUrl . 'verify-email.php?token=' . urlencode($token);
 
-    // Email subject and body
+    // Email subject and body with a clean, boxed layout
     $subject = "Verify your email for " . $siteName;
     $body = "
     <html>
     <head>
         <title>Verify Your Email</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f2f2f2;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #ffffff;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            }
+            .header {
+                text-align: center;
+                padding: 10px 0;
+            }
+            .header h1 {
+                color: #333333;
+                font-size: 24px;
+                margin: 0;
+            }
+            .content {
+                padding: 20px;
+                text-align: center;
+                color: #333333;
+                font-size: 16px;
+            }
+            .btn {
+                background-color: #4F46E5;
+                color: #ffffff;
+                padding: 10px 20px;
+                text-decoration: none;
+                border-radius: 5px;
+                display: inline-block;
+                margin-top: 20px;
+            }
+            .footer {
+                text-align: center;
+                font-size: 12px;
+                color: #888888;
+                margin-top: 20px;
+                padding-bottom: 20px; /* Padding at the bottom */
+            }
+        </style>
     </head>
-    <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;'>
-        <!-- Logo with Font Awesome Icon -->
-        <div style='text-align: center; margin-bottom: 20px;'>
-            <div style='font-size: 24px; font-weight: bold; color: #4F46E5; display: inline-flex; align-items: center;'>
-                <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "' style='text-decoration: none; color: #4F46E5;'>
-                    <i class='" . htmlspecialchars($siteIcon, ENT_QUOTES, 'UTF-8') . "' style='margin-right: 8px;'></i>
-                    " . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "
-                </a>
+    <body>
+        <div class='container'>
+            <div class='header'>
+                <h1>Verify Your Email</h1>
             </div>
-        </div>
-
-        <!-- Main email content inside the white box -->
-        <div style='background-color: #ffffff; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto;'>
-            <p>Hello,</p>
-            <p>Please click the link below to verify your email address:</p>
-            <p style='text-align: center;'>
-                <a href='" . htmlspecialchars($verificationLink, ENT_QUOTES, 'UTF-8') . "' style='display: inline-block; padding: 10px 20px; background-color: #4F46E5; color: #ffffff; text-decoration: none; border-radius: 5px;'>Verify Email</a>
-            </p>
-            <p>If you didn't sign up for this account, please ignore this email.</p>
-            <p>Thanks,<br>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</p>
+            <div class='content'>
+                <p>Hello,</p>
+                <p>Please click the button below to verify your email address for <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "' style='color: #4F46E5; text-decoration: none;'>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</a>:</p>
+                <a href='" . htmlspecialchars($verificationLink, ENT_QUOTES, 'UTF-8') . "' class='btn'>Verify Email</a>
+                <p>If you didn't sign up for this account, please ignore this email.</p>
+                <p>Thanks,<br>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</p>
+            </div>
+            <div class='footer'>
+                <p>&copy; " . date('Y') . " <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "' style='color: #4F46E5; text-decoration: none;'>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</a>. All rights reserved.</p>
+            </div>
         </div>
     </body>
     </html>
@@ -346,13 +432,12 @@ function sendVerificationEmail($email, $token) {
 function sendPasswordResetEmail($email, $token) {
     $siteSettings = getSiteSettings();  // Fetch site settings
     $siteName = $siteSettings['site_name'] ?? 'Your Site Name';
-    $siteIcon = $siteSettings['site_icon'] ?? 'fas fa-globe'; // Default icon
-    $siteUrl = fullUrl();
+    $siteUrl = fullUrl();  // Assuming fullUrl() gives you the domain URL
 
     // Password reset link
     $resetLink = $siteUrl . 'reset-password.php?token=' . urlencode($token);
 
-    // Email subject and body with a clean, boxed layout
+    // Email subject and body with improved layout
     $subject = "Password Reset Request for " . $siteName;
     $body = "
     <html>
@@ -402,26 +487,18 @@ function sendPasswordResetEmail($email, $token) {
                 font-size: 12px;
                 color: #888888;
                 margin-top: 20px;
+                padding-bottom: 20px; /* Padding at the bottom */
             }
         </style>
     </head>
     <body>
-        <div style='text-align: center; margin-bottom: 20px;'>
-            <!-- Logo with Font Awesome Icon -->
-            <div style='font-size: 24px; font-weight: bold; color: #4F46E5; display: inline-flex; align-items: center;'>
-                <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "' style='text-decoration: none; color: #4F46E5;'>
-                    <i class='" . htmlspecialchars($siteIcon, ENT_QUOTES, 'UTF-8') . "' style='margin-right: 8px;'></i>
-                    " . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "
-                </a>
-            </div>
-        </div>
         <div class='container'>
             <div class='header'>
                 <h1>Password Reset</h1>
             </div>
             <div class='content'>
                 <p>Hi,</p>
-                <p>You requested to reset your password for your account on $siteName. Click the button below to reset it:</p>
+                <p>You requested to reset your password for your account on <a href='" . htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8') . "'>" . htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') . "</a>. Click the button below to reset it:</p>
                 <a href='" . htmlspecialchars($resetLink, ENT_QUOTES, 'UTF-8') . "' class='btn'>Reset Your Password</a>
                 <p>If you did not request this password reset, please ignore this email.</p>
             </div>
@@ -434,6 +511,111 @@ function sendPasswordResetEmail($email, $token) {
     ";
 
     sendEmail($email, $subject, $body);
+}
+
+/**
+ * Validates the contact form inputs.
+ *
+ * @param array $post The $_POST array from the form submission.
+ * @param string $recaptcha_secret_key The secret key for Google reCAPTCHA.
+ * @return array Returns an array with errors and cleaned data.
+ */
+function validateContactForm($post, $recaptcha_secret_key) {
+    $errors = [];
+    $data = [];
+
+    // Validate Name
+    if (empty(trim($post['name']))) {
+        $errors['name_err'] = "Please enter your name.";
+    } else {
+        $data['name'] = htmlspecialchars(trim($post['name']), ENT_QUOTES, 'UTF-8');
+    }
+
+    // Validate Email
+    if (empty(trim($post['email']))) {
+        $errors['email_err'] = "Please enter your email.";
+    } elseif (!filter_var(trim($post['email']), FILTER_VALIDATE_EMAIL)) {
+        $errors['email_err'] = "Please enter a valid email.";
+    } else {
+        $data['email'] = htmlspecialchars(trim($post['email']), ENT_QUOTES, 'UTF-8');
+    }
+
+    // Validate Subject
+    if (empty(trim($post['subject']))) {
+        $errors['subject_err'] = "Please enter a subject.";
+    } else {
+        $data['subject'] = htmlspecialchars(trim($post['subject']), ENT_QUOTES, 'UTF-8');
+    }
+
+    // Validate Message
+    if (empty(trim($post['message']))) {
+        $errors['message_err'] = "Please enter a message.";
+    } else {
+        $data['message'] = htmlspecialchars(trim($post['message']), ENT_QUOTES, 'UTF-8');
+    }
+
+    // Validate reCAPTCHA
+    if (empty($post['g-recaptcha-response'])) {
+        $errors['recaptcha_err'] = "Please complete the reCAPTCHA verification.";
+    } else {
+        $recaptcha_response = $post['g-recaptcha-response'];
+
+        // Make a POST request to verify reCAPTCHA
+        $verify_url = 'https://www.google.com/recaptcha/api/siteverify';
+        $data_recaptcha = [
+            'secret' => $recaptcha_secret_key,
+            'response' => $recaptcha_response,
+            'remoteip' => $_SERVER['REMOTE_ADDR']
+        ];
+
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($data_recaptcha),
+                'timeout' => 10
+            ]
+        ];
+
+        $context  = stream_context_create($options);
+        $verify = @file_get_contents($verify_url, false, $context);
+        $captcha_success = json_decode($verify);
+
+        if ($captcha_success === null || !$captcha_success->success) {
+            $errors['recaptcha_err'] = "reCAPTCHA verification failed. Please try again.";
+        }
+    }
+
+    return ['errors' => $errors, 'data' => $data];
+}
+
+/**
+ * Sends the contact form email.
+ *
+ * @param string $to The recipient email address.
+ * @param array $data The validated contact form data.
+ * @param string $from The sender email address.
+ * @return bool True if the email was sent successfully, false otherwise.
+ */
+function sendContactEmail($to, $data, $from) {
+    $email_headers = [];
+    $email_headers[] = 'MIME-Version: 1.0';
+    $email_headers[] = 'Content-type: text/plain; charset=UTF-8';
+    $email_headers[] = 'From: ' . $from;
+    $email_headers[] = 'Reply-To: ' . $data['email'];
+    $email_headers[] = 'X-Mailer: PHP/' . phpversion();
+
+    $headers_string = implode("\r\n", $email_headers);
+
+    $email_subject = 'Contact Form Submission: ' . $data['subject'];
+    $email_body = "You have received a new message from your website contact form.\n\n" .
+                  "Here are the details:\n" .
+                  "Name: {$data['name']}\n" .
+                  "Email: {$data['email']}\n" .
+                  "Subject: {$data['subject']}\n\n" .
+                  "Message:\n{$data['message']}";
+
+    return mail($to, $email_subject, $email_body, $headers_string);
 }
 
 ?>

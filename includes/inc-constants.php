@@ -1,5 +1,5 @@
 <?php
-// File: inc-constants.php
+// File: includes/inc-constants.php
 
 /**
  * Determine if the script is running on localhost or live environment,
@@ -17,8 +17,8 @@ if (strpos($_SERVER['SERVER_NAME'], 'localhost') !== false || strpos($_SERVER['H
     // Production server credentials
     define('DRIVER', 'mysql');
     define('HOST', 'localhost');
-    define('USER', 'prod_user'); // Production database user (replace 'prod_user' with actual production username)
-    define('PASS', 'prod_pass'); // Production password (replace 'prod_pass' with actual production password)
-    define('DATA', 'prod_saas'); // Production database name (replace 'prod_saas' with actual production database name)
+    define('USER', 'bigbrothertimetracker'); // Production database user (replace 'prod_user' with actual production username)
+    define('PASS', 'XvIhd4eHG3I55yO'); // Production password (replace 'prod_pass' with actual production password)
+    define('DATA', 'bigbrothertimetracker'); // Production database name (replace 'prod_saas' with actual production database name)
 }
 ?>

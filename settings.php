@@ -1,8 +1,5 @@
 <?php
 // File: settings.php
-?>
-
-<?php
 
 require_once(__DIR__ . "/includes/inc-db-connection.php");
 require_once(__DIR__ . "/includes/inc-functions.php");
@@ -27,10 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF Protection
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         $error = "Invalid CSRF token.";
+    } elseif (isset($_POST['generate_sitemap'])) {
+        // Handle the generation of sitemap and robots.txt
+        generateSitemapAndRobots();
+        $success = 'Sitemap and robots.txt generated successfully.';
     } else {
-        // Sanitize and validate input
+        // Sanitize and validate input for updating site settings
         $site_name = trim($_POST['site_name']);
         $contact_email = filter_var(trim($_POST['contact_email']), FILTER_VALIDATE_EMAIL);
+        $home_meta_title = trim($_POST['home_meta_title']);
+        $home_meta_description = trim($_POST['home_meta_description']);
         $recaptcha_site_key = trim($_POST['recaptcha_site_key']);
         $recaptcha_secret_key = trim($_POST['recaptcha_secret_key']);
         $price_gbp = trim($_POST['price_gbp']);
@@ -53,6 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Site name cannot be empty.";
         } elseif (!$contact_email) {
             $error = "Please enter a valid contact email.";
+        } elseif (empty($home_meta_title)) {
+            $error = "Home page meta title cannot be empty.";
+        } elseif (empty($home_meta_description)) {
+            $error = "Home page meta description cannot be empty.";
         } elseif (!is_numeric($price_gbp) || $price_gbp < 0) {
             $error = "Please enter a valid price in GBP.";
         }
@@ -64,6 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updateData = [
                 'site_name' => $site_name,
                 'contact_email' => $contact_email,
+                'home_meta_title' => $home_meta_title,
+                'home_meta_description' => $home_meta_description,
                 'recaptcha_site_key' => $recaptcha_site_key,
                 'recaptcha_secret_key' => $recaptcha_secret_key,
                 'price_gbp' => $price_gbp,
@@ -119,14 +128,14 @@ include(__DIR__ . "/includes/inc-header.php");
         <!-- Success and Error Messages Inside the Form Container -->
         <?php if (!empty($success)): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <strong class="font-bold">Success!</strong>
+                <i class="fas fa-check-circle mr-2 text-lg"></i>
                 <span class="block sm:inline"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></span>
             </div>
         <?php endif; ?>
 
         <?php if (!empty($error)): ?>
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <strong class="font-bold">Error!</strong>
+                <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
                 <span class="block sm:inline"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></span>
             </div>
         <?php endif; ?>
@@ -145,6 +154,31 @@ include(__DIR__ . "/includes/inc-header.php");
                 required
                 value="<?= htmlspecialchars($siteSettings['site_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
             >
+        </div>
+
+        <!-- Home Page Meta Title -->
+        <div class="mb-4">
+            <label for="home_meta_title" class="block text-gray-700 font-bold mb-2">Home Page Meta Title:</label>
+            <input 
+                type="text" 
+                id="home_meta_title" 
+                name="home_meta_title" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                required
+                value="<?= htmlspecialchars($siteSettings['home_meta_title'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+            >
+        </div>
+
+        <!-- Home Page Meta Description -->
+        <div class="mb-4">
+            <label for="home_meta_description" class="block text-gray-700 font-bold mb-2">Home Page Meta Description:</label>
+            <textarea 
+                id="home_meta_description" 
+                name="home_meta_description" 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                rows="4"
+                required
+            ><?= htmlspecialchars($siteSettings['home_meta_description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
         </div>
 
         <!-- Contact Email Field -->
@@ -298,6 +332,14 @@ include(__DIR__ . "/includes/inc-header.php");
         <!-- Submit Button -->
         <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
             Update Settings
+        </button>
+    </form>
+
+    <!-- Sitemap and Robots.txt Button -->
+    <form method="POST" class="mt-8 max-w-lg mx-auto bg-white p-8 shadow-lg rounded-lg">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
+        <button type="submit" name="generate_sitemap" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-500">
+            Generate Sitemap and Robots.txt
         </button>
     </form>
 </main>
