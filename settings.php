@@ -344,6 +344,4 @@ include(__DIR__ . "/includes/inc-header.php");
     </form>
 </main>
 
-<?php
-    include(__DIR__ . "/includes/inc-footer.php");
-?>
+<?php include(__DIR__ . "/includes/inc-footer.php"); ?>
