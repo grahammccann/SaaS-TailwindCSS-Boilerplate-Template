@@ -4,28 +4,24 @@
 require_once(__DIR__ . "/includes/inc-db-connection.php");
 require_once(__DIR__ . "/includes/inc-functions.php");
 
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Initialize variables
-$error = '';
+$error   = '';
 $success = '';
-$token = isset($_GET['token']) ? $_GET['token'] : '';
+$token   = trim($_GET['token'] ?? '');
 
-if (!empty($token)) {
-    $db = DB::getInstance();
+if ($token) {
+    $db   = DB::getInstance();
     $user = $db->selectOneByField('users', 'verification_token', $token);
 
     if ($user) {
-        // Activate the user's account
         $db->update('users', 'id', $user['id'], [
-            'is_active' => 1,
+            'is_active'          => 1,
             'verification_token' => null,
-            'updated_at' => date('Y-m-d H:i:s')
+            'updated_at'         => date('Y-m-d H:i:s'),
         ]);
-
         $success = "Your email has been verified successfully. You can now log in.";
     } else {
         $error = "Invalid or expired verification token.";
@@ -34,36 +30,37 @@ if (!empty($token)) {
     $error = "No verification token provided.";
 }
 
-// Include the header
 include(__DIR__ . "/includes/inc-header.php");
 ?>
 
-<!-- Main Content -->
-<main class="container mx-auto my-12 px-4">
-    <div class="max-w-md mx-auto bg-white p-8 shadow-lg rounded-lg text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Email Verification</h1>
+<main class="bg-gray-100 min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
+  <div class="w-full max-w-md bg-white p-10 shadow-2xl rounded-2xl">
+    <h1 class="text-4xl font-extrabold text-center text-gray-800 mb-10 pb-3 border-b-4 border-indigo-500">
+      <i class="fas fa-envelope-open-text text-indigo-500 mr-2"></i>Email Verification
+    </h1>
 
-        <!-- Success and Error Messages -->
-        <?php if (!empty($success)): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6 inline-block" role="alert">
-                <i class="fas fa-check-circle mr-2 text-lg"></i>
-                <span class="block sm:inline"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-            <p class="mt-4">
-                <a href="<?= htmlspecialchars(fullUrl() . 'login.php', ENT_QUOTES, 'UTF-8'); ?>" class="text-indigo-600 hover:text-indigo-800">Click here to log in.</a>
-            </p>
-        <?php endif; ?>
-
-        <?php if (!empty($error)): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6 inline-block" role="alert">
-                <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
-                <span class="block sm:inline"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-            <p class="mt-4">
-                <a href="<?= htmlspecialchars(fullUrl() . 'signup.php', ENT_QUOTES, 'UTF-8'); ?>" class="text-indigo-600 hover:text-indigo-800">Click here to sign up.</a>
-            </p>
-        <?php endif; ?>
-    </div>
+    <?php if ($success): ?>
+      <div class="flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg mb-6">
+        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+        <span><?= htmlspecialchars($success, ENT_QUOTES) ?></span>
+      </div>
+      <p class="text-center">
+        <a href="<?= fullUrl() ?>login/" class="text-indigo-600 hover:text-indigo-800 font-medium">
+          Click here to log in
+        </a>
+      </p>
+    <?php else: ?>
+      <div class="flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg mb-6">
+        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+        <span><?= htmlspecialchars($error, ENT_QUOTES) ?></span>
+      </div>
+      <p class="text-center">
+        <a href="<?= fullUrl() ?>signup/" class="text-indigo-600 hover:text-indigo-800 font-medium">
+          Click here to sign up
+        </a>
+      </p>
+    <?php endif; ?>
+  </div>
 </main>
 
 <?php include(__DIR__ . "/includes/inc-footer.php"); ?>

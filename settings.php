@@ -4,344 +4,273 @@
 require_once(__DIR__ . "/includes/inc-db-connection.php");
 require_once(__DIR__ . "/includes/inc-functions.php");
 
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Check if the user is logged in and is admin
 if (!isAdmin()) {
     header("Location: " . fullUrl() . "login.php");
     exit();
 }
 
 $siteSettings = getSiteSettings();
-$error = '';
-$success = '';
+$error        = '';
+$success      = '';
 
-// Handle form submission
+// Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // CSRF Protection
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    // CSRF check
+    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         $error = "Invalid CSRF token.";
-    } elseif (isset($_POST['generate_sitemap'])) {
-        // Handle the generation of sitemap and robots.txt
-        generateSitemapAndRobots();
-        $success = 'Sitemap and robots.txt generated successfully.';
     } else {
-        // Sanitize and validate input for updating site settings
-        $site_name = trim($_POST['site_name']);
-        $contact_email = filter_var(trim($_POST['contact_email']), FILTER_VALIDATE_EMAIL);
-        $home_meta_title = trim($_POST['home_meta_title']);
-        $home_meta_description = trim($_POST['home_meta_description']);
-        $recaptcha_site_key = trim($_POST['recaptcha_site_key']);
-        $recaptcha_secret_key = trim($_POST['recaptcha_secret_key']);
-        $price_gbp = trim($_POST['price_gbp']);
-        $stripe_mode = in_array($_POST['stripe_mode'], ['live', 'test']) ? $_POST['stripe_mode'] : 'test';
-        $site_icon = trim($_POST['site_icon']);
-
-        // New Stripe Keys
-        $stripe_test_secret_key = trim($_POST['stripe_test_secret_key']);
-        $stripe_test_publishable_key = trim($_POST['stripe_test_publishable_key']);
-        $stripe_live_secret_key = trim($_POST['stripe_live_secret_key']);
-        $stripe_live_publishable_key = trim($_POST['stripe_live_publishable_key']);
-
-        // New social media links
-        $facebook_link = trim($_POST['facebook_link']);
-        $twitter_link = trim($_POST['twitter_link']);
-        $instagram_link = trim($_POST['instagram_link']);
-
-        // Validate required fields
-        if (empty($site_name)) {
-            $error = "Site name cannot be empty.";
-        } elseif (!$contact_email) {
-            $error = "Please enter a valid contact email.";
-        } elseif (empty($home_meta_title)) {
-            $error = "Home page meta title cannot be empty.";
-        } elseif (empty($home_meta_description)) {
-            $error = "Home page meta description cannot be empty.";
-        } elseif (!is_numeric($price_gbp) || $price_gbp < 0) {
-            $error = "Please enter a valid price in GBP.";
-        }
-
-        if (empty($error)) {
-            $db = DB::getInstance();
-
-            // Prepare data to update
-            $updateData = [
-                'site_name' => $site_name,
-                'contact_email' => $contact_email,
-                'home_meta_title' => $home_meta_title,
-                'home_meta_description' => $home_meta_description,
-                'recaptcha_site_key' => $recaptcha_site_key,
-                'recaptcha_secret_key' => $recaptcha_secret_key,
-                'price_gbp' => $price_gbp,
-                'stripe_mode' => $stripe_mode,
-                'site_icon' => $site_icon,
-                'facebook_link' => $facebook_link,
-                'twitter_link' => $twitter_link,
-                'instagram_link' => $instagram_link,
+        if (isset($_POST['generate_sitemap'])) {
+            try {
+                generateSitemapAndRobots(fullUrl(), $_SERVER['DOCUMENT_ROOT']);
+                $success = "Sitemap and robots.txt generated successfully.";
+            } catch (Exception $e) {
+                $error = "Failed to generate sitemap: " . $e->getMessage();
+            }
+        } elseif (isset($_POST['save_settings'])) {
+            $data = [
+                'site_name'                   => $_POST['site_name'] ?? '',
+                'site_icon'                   => $_POST['site_icon'] ?? '',
+                'contact_email'               => $_POST['contact_email'] ?? '',
+                'price_gbp'                   => $_POST['price_gbp'] ?? 0,
+                'recaptcha_site_key'          => $_POST['recaptcha_site_key'] ?? '',
+                'recaptcha_secret_key'        => $_POST['recaptcha_secret_key'] ?? '',
+                'stripe_mode'                 => $_POST['stripe_mode'] ?? 'test',
+                'stripe_test_secret_key'      => $_POST['stripe_test_secret_key'] ?? '',
+                'stripe_test_publishable_key' => $_POST['stripe_test_publishable_key'] ?? '',
+                'stripe_live_secret_key'      => $_POST['stripe_live_secret_key'] ?? '',
+                'stripe_live_publishable_key' => $_POST['stripe_live_publishable_key'] ?? '',
+                'facebook_link'               => $_POST['facebook_link'] ?? '',
+                'x_link'                      => $_POST['x_link'] ?? '',
+                'instagram_link'              => $_POST['instagram_link'] ?? '',
+                'home_meta_title'             => $_POST['home_meta_title'] ?? '',
+                'home_meta_description'       => $_POST['home_meta_description'] ?? ''
             ];
 
-            // Only update Stripe keys if new values are provided
-            if (!empty($stripe_test_secret_key)) {
-                $updateData['stripe_test_secret_key'] = $stripe_test_secret_key;
-            }
-
-            if (!empty($stripe_test_publishable_key)) {
-                $updateData['stripe_test_publishable_key'] = $stripe_test_publishable_key;
-            }
-
-            if (!empty($stripe_live_secret_key)) {
-                $updateData['stripe_live_secret_key'] = $stripe_live_secret_key;
-            }
-
-            if (!empty($stripe_live_publishable_key)) {
-                $updateData['stripe_live_publishable_key'] = $stripe_live_publishable_key;
-            }
-
-            // Update settings in the database
-            $updated = $db->update("settings", "id", 1, $updateData);
+            $db      = DB::getInstance();
+            $updated = $db->update('settings', 'id', 1, $data);
 
             if ($updated) {
-                $success = "Settings updated successfully.";
-                // Refresh site settings
+                $success      = "Settings updated successfully.";
                 $siteSettings = getSiteSettings();
             } else {
-                $error = "Failed to update settings.";
+                $error = "No changes made or update failed.";
             }
         }
     }
 }
 
-// Generate CSRF token
-$csrf_token = generateCsrfToken();
-
-// Include the header
 include(__DIR__ . "/includes/inc-header.php");
 ?>
 
-<main class="container mx-auto my-12 px-4">
-    <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Site Settings</h1>
+<main class="bg-gray-100 min-h-screen py-12 px-4">
+  <div class="max-w-5xl mx-auto">
 
-    <form action="" method="POST" class="max-w-lg mx-auto bg-white p-8 shadow-lg rounded-lg">
-        <!-- Success and Error Messages Inside the Form Container -->
-        <?php if (!empty($success)): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <i class="fas fa-check-circle mr-2 text-lg"></i>
-                <span class="block sm:inline"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-        <?php endif; ?>
+    <!-- Page Header + Sitemap Button -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+      <h1 class="text-3xl font-semibold text-gray-800 flex items-center">
+        <i class="fas fa-cogs text-indigo-600 mr-2"></i>
+        Settings
+      </h1>
+      <form method="post" class="w-full sm:w-auto">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+        <button
+          type="submit"
+          name="generate_sitemap"
+          class="inline-flex items-center bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg shadow transition"
+        >
+          <i class="fas fa-sitemap mr-2"></i>
+          Generate Sitemap & Robots
+        </button>
+      </form>
+    </div>
+    <hr class="border-t-2 border-gray-200 mb-8">
 
-        <?php if (!empty($error)): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
-                <span class="block sm:inline"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-        <?php endif; ?>
+    <!-- Alerts -->
+    <?php if ($success): ?>
+      <div class="flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg mb-6">
+        <i class="fas fa-check-circle text-green-500 mr-3"></i>
+        <span><?= htmlspecialchars($success, ENT_QUOTES) ?></span>
+      </div>
+    <?php endif; ?>
+    <?php if ($error): ?>
+      <div class="flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg mb-6">
+        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
+        <span><?= htmlspecialchars($error, ENT_QUOTES) ?></span>
+      </div>
+    <?php endif; ?>
 
-        <!-- CSRF Token -->
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
+    <!-- Settings Form -->
+    <form method="post" class="bg-white rounded-xl shadow-lg divide-y divide-gray-200 overflow-hidden">
+      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+      <input type="hidden" name="save_settings" value="1">
 
-        <!-- Site Name Field -->
-        <div class="mb-4">
-            <label for="site_name" class="block text-gray-700 font-bold mb-2">Site Name:</label>
-            <input 
-                type="text" 
-                id="site_name" 
-                name="site_name" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-                required
-                value="<?= htmlspecialchars($siteSettings['site_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
+      <!-- General Settings -->
+      <section class="p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+          <i class="fas fa-globe mr-2 text-indigo-500"></i>
+          General Settings
+        </h2>
+        <hr class="border-t-2 border-gray-200 mb-6">
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Site Name</label>
+            <input type="text" name="site_name"
+                   value="<?= htmlspecialchars($siteSettings['site_name'], ENT_QUOTES) ?>"
+                   required
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Site Icon</label>
+            <input type="text" name="site_icon"
+                   value="<?= htmlspecialchars($siteSettings['site_icon'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Contact Email</label>
+            <input type="email" name="contact_email"
+                   value="<?= htmlspecialchars($siteSettings['contact_email'], ENT_QUOTES) ?>"
+                   required
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Claim Fee (£ GBP)</label>
+            <input type="number" step="0.01" name="price_gbp"
+                   value="<?= htmlspecialchars($siteSettings['price_gbp'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
         </div>
+      </section>
 
-        <!-- Home Page Meta Title -->
-        <div class="mb-4">
-            <label for="home_meta_title" class="block text-gray-700 font-bold mb-2">Home Page Meta Title:</label>
-            <input 
-                type="text" 
-                id="home_meta_title" 
-                name="home_meta_title" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-                required
-                value="<?= htmlspecialchars($siteSettings['home_meta_title'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
+      <!-- reCAPTCHA -->
+      <section class="p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+          <i class="fas fa-shield-alt mr-2 text-indigo-500"></i>
+          reCAPTCHA
+        </h2>
+        <hr class="border-t-2 border-gray-200 mb-6">
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Site Key</label>
+            <input type="text" name="recaptcha_site_key"
+                   value="<?= htmlspecialchars($siteSettings['recaptcha_site_key'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Secret Key</label>
+            <input type="text" name="recaptcha_secret_key"
+                   value="<?= htmlspecialchars($siteSettings['recaptcha_secret_key'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
         </div>
+      </section>
 
-        <!-- Home Page Meta Description -->
-        <div class="mb-4">
-            <label for="home_meta_description" class="block text-gray-700 font-bold mb-2">Home Page Meta Description:</label>
-            <textarea 
-                id="home_meta_description" 
-                name="home_meta_description" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-                rows="4"
-                required
-            ><?= htmlspecialchars($siteSettings['home_meta_description'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
-        </div>
-
-        <!-- Contact Email Field -->
-        <div class="mb-4">
-            <label for="contact_email" class="block text-gray-700 font-bold mb-2">Contact Email:</label>
-            <input 
-                type="email" 
-                id="contact_email" 
-                name="contact_email" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-                value="<?= htmlspecialchars($siteSettings['contact_email'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-
-        <!-- Site Icon Field -->
-        <div class="mb-4">
-            <label for="site_icon" class="block text-gray-700 font-bold mb-2">Site Icon (FontAwesome Icon Class):</label>
-            <input 
-                type="text" 
-                id="site_icon" 
-                name="site_icon" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['site_icon'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-
-        <!-- Social Media Links Fields -->
-        <div class="mb-4">
-            <label for="facebook_link" class="block text-gray-700 font-bold mb-2">Facebook URL:</label>
-            <input 
-                type="url" 
-                id="facebook_link" 
-                name="facebook_link" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['facebook_link'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-        <div class="mb-4">
-            <label for="twitter_link" class="block text-gray-700 font-bold mb-2">Twitter URL:</label>
-            <input 
-                type="url" 
-                id="twitter_link" 
-                name="twitter_link" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['twitter_link'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-        <div class="mb-4">
-            <label for="instagram_link" class="block text-gray-700 font-bold mb-2">Instagram URL:</label>
-            <input 
-                type="url" 
-                id="instagram_link" 
-                name="instagram_link" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['instagram_link'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-
-        <!-- Recaptcha and Price Fields -->
-        <div class="mb-4">
-            <label for="recaptcha_site_key" class="block text-gray-700 font-bold mb-2">reCAPTCHA Site Key:</label>
-            <input 
-                type="text" 
-                id="recaptcha_site_key" 
-                name="recaptcha_site_key" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['recaptcha_site_key'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-        <div class="mb-4">
-            <label for="recaptcha_secret_key" class="block text-gray-700 font-bold mb-2">reCAPTCHA Secret Key:</label>
-            <input 
-                type="text" 
-                id="recaptcha_secret_key" 
-                name="recaptcha_secret_key" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['recaptcha_secret_key'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-        <div class="mb-4">
-            <label for="price_gbp" class="block text-gray-700 font-bold mb-2">Price (GBP):</label>
-            <input 
-                type="number" 
-                step="0.01"
-                id="price_gbp" 
-                name="price_gbp" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-                value="<?= htmlspecialchars($siteSettings['price_gbp'] ?? '0.00', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-
-        <!-- Stripe Mode Field -->
+      <!-- Stripe Configuration -->
+      <section class="p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+          <i class="fab fa-stripe-s mr-2 text-indigo-500"></i>
+          Stripe Configuration
+        </h2>
+        <hr class="border-t-2 border-gray-200 mb-6">
         <div class="mb-6">
-            <label for="stripe_mode" class="block text-gray-700 font-bold mb-2">Stripe Mode:</label>
-            <select 
-                id="stripe_mode" 
-                name="stripe_mode" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-            >
-                <option value="live" <?= (isset($siteSettings['stripe_mode']) && $siteSettings['stripe_mode'] === 'live') ? 'selected' : '' ?>>Live</option>
-                <option value="test" <?= (isset($siteSettings['stripe_mode']) && $siteSettings['stripe_mode'] === 'test') ? 'selected' : '' ?>>Test</option>
-            </select>
+          <label class="block text-sm font-medium text-gray-600">Stripe Mode</label>
+          <select name="stripe_mode"
+                  class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="test" <?= $siteSettings['stripe_mode']==='test' ? 'selected' : '' ?>>Test</option>
+            <option value="live" <?= $siteSettings['stripe_mode']==='live' ? 'selected' : '' ?>>Live</option>
+          </select>
         </div>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Test Secret Key</label>
+            <input type="text" name="stripe_test_secret_key"
+                   value="<?= htmlspecialchars($siteSettings['stripe_test_secret_key'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Test Publishable Key</label>
+            <input type="text" name="stripe_test_publishable_key"
+                   value="<?= htmlspecialchars($siteSettings['stripe_test_publishable_key'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Live Secret Key</label>
+            <input type="text" name="stripe_live_secret_key"
+                   value="<?= htmlspecialchars($siteSettings['stripe_live_secret_key'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Live Publishable Key</label>
+            <input type="text" name="stripe_live_publishable_key"
+                   value="<?= htmlspecialchars($siteSettings['stripe_live_publishable_key'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+        </div>
+      </section>
 
-        <!-- New Stripe Keys Fields -->
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Stripe API Keys</h2>
-        <div class="mb-4">
-            <label for="stripe_test_secret_key" class="block text-gray-700 font-bold mb-2">Stripe Test Secret Key:</label>
-            <input 
-                type="password" 
-                id="stripe_test_secret_key" 
-                name="stripe_test_secret_key" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter Test Secret Key"
-            >
+      <!-- Social Media -->
+      <section class="p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+          <i class="fas fa-share-alt mr-2 text-indigo-500"></i>
+          Social Media
+        </h2>
+        <hr class="border-t-2 border-gray-200 mb-6">
+        <div class="grid md:grid-cols-3 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Facebook URL</label>
+            <input type="url" name="facebook_link"
+                   value="<?= htmlspecialchars($siteSettings['facebook_link'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">X (Twitter) URL</label>
+            <input type="url" name="x_link"
+                   value="<?= htmlspecialchars($siteSettings['x_link'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600">Instagram URL</label>
+            <input type="url" name="instagram_link"
+                   value="<?= htmlspecialchars($siteSettings['instagram_link'], ENT_QUOTES) ?>"
+                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
         </div>
-        <div class="mb-4">
-            <label for="stripe_test_publishable_key" class="block text-gray-700 font-bold mb-2">Stripe Test Publishable Key:</label>
-            <input 
-                type="text" 
-                id="stripe_test_publishable_key" 
-                name="stripe_test_publishable_key" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['stripe_test_publishable_key'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
-        <div class="mb-4">
-            <label for="stripe_live_secret_key" class="block text-gray-700 font-bold mb-2">Stripe Live Secret Key:</label>
-            <input 
-                type="password" 
-                id="stripe_live_secret_key" 
-                name="stripe_live_secret_key" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Enter Live Secret Key"
-            >
-        </div>
-        <div class="mb-4">
-            <label for="stripe_live_publishable_key" class="block text-gray-700 font-bold mb-2">Stripe Live Publishable Key:</label>
-            <input 
-                type="text" 
-                id="stripe_live_publishable_key" 
-                name="stripe_live_publishable_key" 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                value="<?= htmlspecialchars($siteSettings['stripe_live_publishable_key'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-            >
-        </div>
+      </section>
 
-        <!-- Submit Button -->
-        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
-            Update Settings
+      <!-- SEO Meta -->
+      <section class="p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-2 flex items-center">
+          <i class="fas fa-search mr-2 text-indigo-500"></i>
+          SEO Meta Data
+        </h2>
+        <hr class="border-t-2 border-gray-200 mb-6">
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-600">Homepage Meta Title</label>
+          <input type="text" name="home_meta_title"
+                 value="<?= htmlspecialchars($siteSettings['home_meta_title'], ENT_QUOTES) ?>"
+                 class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus;border-indigo-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600">Homepage Meta Description</label>
+          <textarea name="home_meta_description" rows="4"
+                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus;border-indigo-500"><?= htmlspecialchars($siteSettings['home_meta_description'], ENT_QUOTES) ?></textarea>
+        </div>
+      </section>
+
+      <!-- Submit -->
+      <div class="px-8 py-6 bg-gray-50 text-right">
+        <button type="submit"
+                class="inline-flex items-center bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm px-6 py-3 rounded-md shadow-sm transition focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <i class="fas fa-save mr-2"></i>
+          Save Changes
         </button>
+      </div>
     </form>
 
-    <!-- Sitemap and Robots.txt Button -->
-    <form method="POST" class="mt-8 max-w-lg mx-auto bg-white p-8 shadow-lg rounded-lg">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES, 'UTF-8') ?>">
-        <button type="submit" name="generate_sitemap" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition focus:outline-none focus:ring-2 focus:ring-green-500">
-            Generate Sitemap and Robots.txt
-        </button>
-    </form>
+  </div>
 </main>
 
 <?php include(__DIR__ . "/includes/inc-footer.php"); ?>

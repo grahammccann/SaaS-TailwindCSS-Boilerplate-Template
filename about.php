@@ -1,28 +1,24 @@
 <?php
+
 // File: about.php
 
-// Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Include necessary files
 require_once(__DIR__ . "/includes/inc-db-connection.php");
 require_once(__DIR__ . "/includes/inc-functions.php");
 
-// Fetch site settings
 $siteSettings = getSiteSettings();
+$siteName = $siteSettings['site_name'] ?? 'Our SaaS Platform';
 
-// Include the header
 include(__DIR__ . "/includes/inc-header.php");
 ?>
 
-<!-- Main Content -->
 <main class="container mx-auto my-12 px-4">
-    <div class="max-w-md mx-auto bg-white p-8 shadow-lg rounded-lg">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">About</h1>
+    <section class="max-w-3xl mx-auto bg-white p-8 shadow-lg rounded-lg">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">About <?= htmlspecialchars($siteName) ?></h1>
 
-        <!-- Success and Error Messages Inside the Form Container -->
         <?php if (!empty($success)): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
                 <i class="fas fa-check-circle mr-2 text-lg"></i>
@@ -37,6 +33,20 @@ include(__DIR__ . "/includes/inc-header.php");
             </div>
         <?php endif; ?>
 
+        <div class="text-gray-700 leading-relaxed space-y-4">
+            <p><?= htmlspecialchars($siteName) ?> is built to simplify your workflow, enhance productivity, and support your business growth. Whether you're a startup or an established company, we provide the tools you need to thrive.</p>
+
+            <p>Our mission is to offer a streamlined, user-friendly platform that adapts to your needs — no matter your industry or goals.</p>
+
+            <p>We're constantly improving our services based on your feedback, and we’re committed to transparency, simplicity, and long-term support.</p>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="<?= fullUrl() ?>features/" class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded shadow transition duration-200">
+                Explore Our Features
+            </a>
+        </div>
+    </section>
 </main>
 
 <?php include(__DIR__ . "/includes/inc-footer.php"); ?>
