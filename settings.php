@@ -16,11 +16,12 @@ if (!isAdmin()) {
 $siteSettings = getSiteSettings();
 $error        = '';
 $success      = '';
+$csrf_token   = generateCsrfToken();
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF check
-    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $error = "Invalid CSRF token.";
     } else {
         if (isset($_POST['generate_sitemap'])) {
@@ -76,7 +77,7 @@ include(__DIR__ . "/includes/inc-header.php");
         Settings
       </h1>
       <form method="post" class="w-full sm:w-auto">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
         <button
           type="submit"
           name="generate_sitemap"
@@ -89,23 +90,11 @@ include(__DIR__ . "/includes/inc-header.php");
     </div>
     <hr class="border-t-2 border-gray-200 mb-8">
 
-    <!-- Alerts -->
-    <?php if ($success): ?>
-      <div class="flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg mb-6">
-        <i class="fas fa-check-circle text-green-500 mr-3"></i>
-        <span><?= htmlspecialchars($success, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg mb-6">
-        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-        <span><?= htmlspecialchars($error, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
+    <?php renderAlerts($success, $error); ?>
 
     <!-- Settings Form -->
     <form method="post" class="bg-white rounded-xl shadow-lg divide-y divide-gray-200 overflow-hidden">
-      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES) ?>">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
       <input type="hidden" name="save_settings" value="1">
 
       <!-- General Settings -->
@@ -119,27 +108,27 @@ include(__DIR__ . "/includes/inc-header.php");
           <div>
             <label class="block text-sm font-medium text-gray-600">Site Name</label>
             <input type="text" name="site_name"
-                   value="<?= htmlspecialchars($siteSettings['site_name'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['site_name']) ?>"
                    required
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Site Icon</label>
             <input type="text" name="site_icon"
-                   value="<?= htmlspecialchars($siteSettings['site_icon'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['site_icon']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Contact Email</label>
             <input type="email" name="contact_email"
-                   value="<?= htmlspecialchars($siteSettings['contact_email'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['contact_email']) ?>"
                    required
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Claim Fee (£ GBP)</label>
             <input type="number" step="0.01" name="price_gbp"
-                   value="<?= htmlspecialchars($siteSettings['price_gbp'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['price_gbp']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
         </div>
@@ -156,13 +145,13 @@ include(__DIR__ . "/includes/inc-header.php");
           <div>
             <label class="block text-sm font-medium text-gray-600">Site Key</label>
             <input type="text" name="recaptcha_site_key"
-                   value="<?= htmlspecialchars($siteSettings['recaptcha_site_key'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['recaptcha_site_key']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Secret Key</label>
             <input type="text" name="recaptcha_secret_key"
-                   value="<?= htmlspecialchars($siteSettings['recaptcha_secret_key'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['recaptcha_secret_key']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
         </div>
@@ -179,33 +168,33 @@ include(__DIR__ . "/includes/inc-header.php");
           <label class="block text-sm font-medium text-gray-600">Stripe Mode</label>
           <select name="stripe_mode"
                   class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
-            <option value="test" <?= $siteSettings['stripe_mode']==='test' ? 'selected' : '' ?>>Test</option>
-            <option value="live" <?= $siteSettings['stripe_mode']==='live' ? 'selected' : '' ?>>Live</option>
+            <option value="test" <?= $siteSettings['stripe_mode'] === 'test' ? 'selected' : '' ?>>Test</option>
+            <option value="live" <?= $siteSettings['stripe_mode'] === 'live' ? 'selected' : '' ?>>Live</option>
           </select>
         </div>
         <div class="grid md:grid-cols-2 gap-6">
           <div>
             <label class="block text-sm font-medium text-gray-600">Test Secret Key</label>
             <input type="text" name="stripe_test_secret_key"
-                   value="<?= htmlspecialchars($siteSettings['stripe_test_secret_key'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['stripe_test_secret_key']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Test Publishable Key</label>
             <input type="text" name="stripe_test_publishable_key"
-                   value="<?= htmlspecialchars($siteSettings['stripe_test_publishable_key'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['stripe_test_publishable_key']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Live Secret Key</label>
             <input type="text" name="stripe_live_secret_key"
-                   value="<?= htmlspecialchars($siteSettings['stripe_live_secret_key'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['stripe_live_secret_key']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Live Publishable Key</label>
             <input type="text" name="stripe_live_publishable_key"
-                   value="<?= htmlspecialchars($siteSettings['stripe_live_publishable_key'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['stripe_live_publishable_key']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
         </div>
@@ -222,19 +211,19 @@ include(__DIR__ . "/includes/inc-header.php");
           <div>
             <label class="block text-sm font-medium text-gray-600">Facebook URL</label>
             <input type="url" name="facebook_link"
-                   value="<?= htmlspecialchars($siteSettings['facebook_link'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['facebook_link']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">X (Twitter) URL</label>
             <input type="url" name="x_link"
-                   value="<?= htmlspecialchars($siteSettings['x_link'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['x_link']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600">Instagram URL</label>
             <input type="url" name="instagram_link"
-                   value="<?= htmlspecialchars($siteSettings['instagram_link'], ENT_QUOTES) ?>"
+                   value="<?= e($siteSettings['instagram_link']) ?>"
                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus:border-indigo-500">
           </div>
         </div>
@@ -250,13 +239,13 @@ include(__DIR__ . "/includes/inc-header.php");
         <div class="mb-6">
           <label class="block text-sm font-medium text-gray-600">Homepage Meta Title</label>
           <input type="text" name="home_meta_title"
-                 value="<?= htmlspecialchars($siteSettings['home_meta_title'], ENT_QUOTES) ?>"
+                 value="<?= e($siteSettings['home_meta_title']) ?>"
                  class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus;border-indigo-500">
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-600">Homepage Meta Description</label>
           <textarea name="home_meta_description" rows="4"
-                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus;border-indigo-500"><?= htmlspecialchars($siteSettings['home_meta_description'], ENT_QUOTES) ?></textarea>
+                    class="mt-1 w-full bg-white border border-gray-300 rounded-md px-4 py-2 focus:ring-indigo-500 focus;border-indigo-500"><?= e($siteSettings['home_meta_description']) ?></textarea>
         </div>
       </section>
 

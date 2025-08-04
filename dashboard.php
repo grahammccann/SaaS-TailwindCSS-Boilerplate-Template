@@ -53,25 +53,13 @@ include(__DIR__ . "/includes/inc-header.php");
 <main class="bg-gray-100 min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
   <div class="w-full max-w-3xl bg-white p-8 shadow-lg rounded-lg">
     <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">
-      Welcome to <?= htmlspecialchars($siteSettings['site_name'] ?? 'Your Dashboard', ENT_QUOTES) ?>!
+      Welcome to <?= e($siteSettings['site_name'] ?? 'Your Dashboard') ?>!
     </h1>
 
-    <!-- Success / Error Alerts -->
-    <?php if ($success): ?>
-      <div class="flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg mb-6">
-        <i class="fas fa-check-circle text-green-500 mr-3"></i>
-        <span><?= htmlspecialchars($success, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg mb-6">
-        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-        <span><?= htmlspecialchars($error, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
+    <?php renderAlerts($success, $error); ?>
 
     <p class="mb-4 text-gray-700">
-      Hello, <strong><?= htmlspecialchars($currentUser['username'] ?? 'Guest', ENT_QUOTES) ?></strong>!
+      Hello, <strong><?= e($currentUser['username'] ?? 'Guest') ?></strong>!
     </p>
     <p class="mb-6 text-gray-600">
       This is your dashboard. From here, you can manage your account.
@@ -94,7 +82,7 @@ include(__DIR__ . "/includes/inc-header.php");
       </form>
 
       <!-- Logout Card -->
-      <a href="<?= fullUrl() ?>logout/"
+      <a href="<?= e(fullUrl() . 'logout/') ?>"
          class="block p-6 bg-red-50 border border-red-200 rounded-lg shadow hover:shadow-md hover:bg-red-100 transition">
         <div class="flex items-center space-x-4">
           <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
@@ -143,7 +131,7 @@ include(__DIR__ . "/includes/inc-header.php");
           </div>
 
           <div class="flex justify-end space-x-2 pt-2">
-            <a href="<?= fullUrl() ?>dashboard/"
+            <a href="<?= e(fullUrl() . 'dashboard/') ?>"
                class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition">
               Cancel
             </a>

@@ -11,7 +11,8 @@ require_once(__DIR__ . "/includes/inc-functions.php");
 
 $currentUser = getCurrentUser();
 $errors = [];
-$general_err = $success_msg = "";
+$success = '';
+$error = '';
 
 $siteSettings = getSiteSettings();
 $recaptcha_site_key = $siteSettings['recaptcha_site_key'] ?? '';
@@ -19,19 +20,23 @@ $recaptcha_secret_key = $siteSettings['recaptcha_secret_key'] ?? '';
 $contact_email = $siteSettings['contact_email'] ?? '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $validation = validateContactForm($_POST, $recaptcha_secret_key);
-    $errors = $validation['errors'];
-    $data = $validation['data'];
+    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+        $error = "Invalid CSRF token. Please try again.";
+    } else {
+        $validation = validateContactForm($_POST, $recaptcha_secret_key);
+        $errors = $validation['errors'];
+        $data = $validation['data'];
 
-    if (empty($errors)) {
-        if (empty($contact_email)) {
-            $general_err = "Contact email is not configured. Please contact the administrator.";
-        } else {
-            if (sendContactEmail($contact_email, $data, $contact_email)) {
-                $success_msg = "Your message has been sent successfully! We will get back to you shortly.";
-                $_POST = [];
+        if (empty($errors)) {
+            if (empty($contact_email)) {
+                $error = "Contact email is not configured. Please contact the administrator.";
             } else {
-                $general_err = "Something went wrong. Please try again later.";
+                if (sendContactEmail($contact_email, $data, $contact_email)) {
+                    $success = "Your message has been sent successfully! We will get back to you shortly.";
+                    $_POST = [];
+                } else {
+                    $error = "Something went wrong. Please try again later.";
+                }
             }
         }
     }
@@ -58,47 +63,39 @@ include(__DIR__ . "/includes/inc-header.php");
     <section class="py-20 bg-gray-50">
         <div class="container mx-auto px-4">
             <div class="max-w-3xl mx-auto bg-white p-10 rounded-lg shadow-lg">
-                <?php if ($success_msg): ?>
-                    <div class="bg-green-100 text-green-700 p-4 rounded mb-6 flex items-center">
-                        <i class="fas fa-check-circle mr-2"></i><?= htmlspecialchars($success_msg) ?>
-                    </div>
-                <?php endif; ?>
-                <?php if ($general_err): ?>
-                    <div class="bg-red-100 text-red-700 p-4 rounded mb-6 flex items-center">
-                        <i class="fas fa-exclamation-circle mr-2"></i><?= htmlspecialchars($general_err) ?>
-                    </div>
-                <?php endif; ?>
+			
+                <?php renderAlerts($success, $error); ?>
 
                 <form action="" method="POST" class="space-y-6">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
                     <!-- Name -->
                     <div>
                         <label for="name" class="block text-gray-700 font-semibold mb-2">Name<span class="text-red-500">*</span></label>
-                        <input type="text" id="name" name="name" value="<?= htmlspecialchars($_POST['name'] ?? '') ?>" required 
+                        <input type="text" id="name" name="name" value="<?= e($_POST['name'] ?? '') ?>" required 
                             class="w-full px-4 py-2 border <?= isset($errors['name_err']) ? 'border-red-500' : 'border-gray-300' ?> rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <?php if (isset($errors['name_err'])): ?>
-                            <p class="text-red-500 text-sm mt-1"><?= htmlspecialchars($errors['name_err']) ?></p>
+                            <p class="text-red-500 text-sm mt-1"><?= e($errors['name_err']) ?></p>
                         <?php endif; ?>
                     </div>
 
                     <!-- Email -->
                     <div>
                         <label for="email" class="block text-gray-700 font-semibold mb-2">Email<span class="text-red-500">*</span></label>
-                        <input type="email" id="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required 
+                        <input type="email" id="email" name="email" value="<?= e($_POST['email'] ?? '') ?>" required 
                             class="w-full px-4 py-2 border <?= isset($errors['email_err']) ? 'border-red-500' : 'border-gray-300' ?> rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <?php if (isset($errors['email_err'])): ?>
-                            <p class="text-red-500 text-sm mt-1"><?= htmlspecialchars($errors['email_err']) ?></p>
+                            <p class="text-red-500 text-sm mt-1"><?= e($errors['email_err']) ?></p>
                         <?php endif; ?>
                     </div>
 
                     <!-- Subject -->
                     <div>
                         <label for="subject" class="block text-gray-700 font-semibold mb-2">Subject<span class="text-red-500">*</span></label>
-                        <input type="text" id="subject" name="subject" value="<?= htmlspecialchars($_POST['subject'] ?? '') ?>" required 
+                        <input type="text" id="subject" name="subject" value="<?= e($_POST['subject'] ?? '') ?>" required 
                             class="w-full px-4 py-2 border <?= isset($errors['subject_err']) ? 'border-red-500' : 'border-gray-300' ?> rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
                         <?php if (isset($errors['subject_err'])): ?>
-                            <p class="text-red-500 text-sm mt-1"><?= htmlspecialchars($errors['subject_err']) ?></p>
+                            <p class="text-red-500 text-sm mt-1"><?= e($errors['subject_err']) ?></p>
                         <?php endif; ?>
                     </div>
 
@@ -106,19 +103,19 @@ include(__DIR__ . "/includes/inc-header.php");
                     <div>
                         <label for="message" class="block text-gray-700 font-semibold mb-2">Message<span class="text-red-500">*</span></label>
                         <textarea id="message" name="message" rows="6" required 
-                            class="w-full px-4 py-2 border <?= isset($errors['message_err']) ? 'border-red-500' : 'border-gray-300' ?> rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"><?= htmlspecialchars($_POST['message'] ?? '') ?></textarea>
+                            class="w-full px-4 py-2 border <?= isset($errors['message_err']) ? 'border-red-500' : 'border-gray-300' ?> rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"><?= e($_POST['message'] ?? '') ?></textarea>
                         <?php if (isset($errors['message_err'])): ?>
-                            <p class="text-red-500 text-sm mt-1"><?= htmlspecialchars($errors['message_err']) ?></p>
+                            <p class="text-red-500 text-sm mt-1"><?= e($errors['message_err']) ?></p>
                         <?php endif; ?>
                     </div>
 
                     <!-- reCAPTCHA -->
                     <?php if ($recaptcha_site_key): ?>
                         <div class="flex justify-center">
-                            <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars($recaptcha_site_key) ?>"></div>
+                            <div class="g-recaptcha" data-sitekey="<?= e($recaptcha_site_key) ?>"></div>
                         </div>
                         <?php if (isset($errors['recaptcha_err'])): ?>
-                            <p class="text-red-500 text-sm mt-2 text-center"><?= htmlspecialchars($errors['recaptcha_err']) ?></p>
+                            <p class="text-red-500 text-sm mt-2 text-center"><?= e($errors['recaptcha_err']) ?></p>
                         <?php endif; ?>
                     <?php else: ?>
                         <p class="text-red-500 text-sm text-center">reCAPTCHA site key not configured.</p>
@@ -126,11 +123,11 @@ include(__DIR__ . "/includes/inc-header.php");
 
                     <!-- Submit -->
                     <div>
-						<button type="submit" 
-							class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-md shadow-md transition duration-300 flex items-center justify-center gap-2">
-							<i class="fas fa-paper-plane"></i>
-							Send Message
-						</button>
+                        <button type="submit" 
+                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-md shadow-md transition duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-paper-plane"></i>
+                            Send Message
+                        </button>
                     </div>
                 </form>
             </div>
@@ -166,7 +163,7 @@ include(__DIR__ . "/includes/inc-header.php");
         <div class="container mx-auto px-4">
             <h2 class="text-3xl md:text-4xl font-bold mb-4">We're Here to Help!</h2>
             <p class="text-lg md:text-xl mb-8">Your satisfaction is our top priority. Reach out any time.</p>
-            <a href="<?= fullUrl() ?>signup/" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300">
+            <a href="<?= e(fullUrl() . 'signup/') ?>" class="inline-block bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-8 rounded-full text-lg shadow-lg transition duration-300">
                 Get Started
             </a>
         </div>

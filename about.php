@@ -19,20 +19,6 @@ include(__DIR__ . "/includes/inc-header.php");
     <section class="max-w-3xl mx-auto bg-white p-8 shadow-lg rounded-lg">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">About <?= htmlspecialchars($siteName) ?></h1>
 
-        <?php if (!empty($success)): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <i class="fas fa-check-circle mr-2 text-lg"></i>
-                <span class="block sm:inline"><?= htmlspecialchars($success, ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($error)): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <i class="fas fa-exclamation-circle mr-2 text-lg"></i>
-                <span class="block sm:inline"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></span>
-            </div>
-        <?php endif; ?>
-
         <div class="text-gray-700 leading-relaxed space-y-4">
             <p><?= htmlspecialchars($siteName) ?> is built to simplify your workflow, enhance productivity, and support your business growth. Whether you're a startup or an established company, we provide the tools you need to thrive.</p>
 

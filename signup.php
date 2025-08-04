@@ -95,23 +95,11 @@ include(__DIR__ . "/includes/inc-header.php");
       <i class="fas fa-user-plus text-green-500 mr-2"></i>Signup
     </h1>
 
-    <!-- Alerts -->
-    <?php if ($success): ?>
-      <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center">
-        <i class="fas fa-check-circle text-green-500 mr-3"></i>
-        <span><?= htmlspecialchars($success, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
-    <?php if ($error): ?>
-      <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center">
-        <i class="fas fa-exclamation-circle text-red-500 mr-3"></i>
-        <span><?= htmlspecialchars($error, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
+    <?php renderAlerts($success, $error); ?>
 
     <!-- Signup Form -->
     <form method="POST" action="" class="space-y-6">
-      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES) ?>">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
       <div class="relative">
         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -123,7 +111,7 @@ include(__DIR__ . "/includes/inc-header.php");
           placeholder="Email address"
           required
           class="w-full h-12 pl-10 pr-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES) ?>"
+          value="<?= e($_POST['email'] ?? '') ?>"
         />
       </div>
 
@@ -137,7 +125,7 @@ include(__DIR__ . "/includes/inc-header.php");
           placeholder="Username"
           required
           class="w-full h-12 pl-10 pr-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-          value="<?= htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES) ?>"
+          value="<?= e($_POST['username'] ?? '') ?>"
         />
       </div>
 

@@ -67,20 +67,11 @@ include(__DIR__ . "/includes/inc-header.php");
       <i class="fas fa-envelope text-blue-500 mr-2"></i>Forgot Password
     </h1>
 
-    <!-- Alerts -->
-    <?php if ($success): ?>
-      <div class="flex items-center mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-        <i class="fas fa-check-circle mr-3"></i><span><?= htmlspecialchars($success) ?></span>
-      </div>
-    <?php elseif ($error): ?>
-      <div class="flex items-center mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-        <i class="fas fa-exclamation-circle mr-3"></i><span><?= htmlspecialchars($error) ?></span>
-      </div>
-    <?php endif; ?>
+    <?php renderAlerts($success, $error); ?>
 
     <!-- Form -->
     <form method="POST" action="" class="space-y-6">
-      <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
       <div class="relative">
         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -92,7 +83,7 @@ include(__DIR__ . "/includes/inc-header.php");
           placeholder="Email address"
           required
           class="w-full h-12 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES) ?>"
+          value="<?= e($_POST['email'] ?? '') ?>"
         />
       </div>
 
@@ -109,7 +100,7 @@ include(__DIR__ . "/includes/inc-header.php");
     <!-- Footer link -->
     <p class="mt-6 text-center text-gray-600">
       Remembered your password?
-      <a href="<?= fullUrl() . 'login/'; ?>" class="text-indigo-600 hover:text-indigo-800 font-medium">
+      <a href="<?= e(fullUrl() . 'login/') ?>" class="text-indigo-600 hover:text-indigo-800 font-medium">
         Login here
       </a>.
     </p>

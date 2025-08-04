@@ -18,7 +18,7 @@ $success = '';
 $token   = trim($_GET['token'] ?? '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (empty($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $error = "Invalid CSRF token.";
     } else {
         $token            = $_POST['token'] ?? '';
@@ -44,10 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 $db->delete('password_resets', 'user_id', $resetEntry['user_id']);
 
-                $success = "Your password has been reset successfully. You can now
-                            <a href='" . fullUrl() . "login/' class='text-indigo-600 underline'>
-                              log in
-                            </a>.";
+                $success = "Your password has been reset successfully. You can now log in.";
             } else {
                 $error = "Invalid or expired reset token.";
             }
@@ -67,25 +64,18 @@ include(__DIR__ . "/includes/inc-header.php");
       Reset Password
     </h1>
 
-    <!-- Success / Error Alerts -->
+    <?php renderAlerts($success, $error); ?>
+
     <?php if ($success): ?>
-      <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center">
-        <i class="fas fa-check-circle mr-2 text-green-500"></i>
-        <span><?= $success ?></span>
-      </div>
-    <?php endif; ?>
-
-    <?php if ($error): ?>
-      <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center">
-        <i class="fas fa-exclamation-circle mr-2 text-red-500"></i>
-        <span><?= htmlspecialchars($error, ENT_QUOTES) ?></span>
-      </div>
-    <?php endif; ?>
-
-    <?php if (empty($success)): ?>
+      <p class="text-center mt-4">
+        <a href="<?= e(fullUrl() . 'login/') ?>" class="text-indigo-600 underline font-medium">
+          Click here to log in
+        </a>
+      </p>
+    <?php else: ?>
       <form method="POST" class="space-y-6">
-        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES) ?>">
-        <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES) ?>">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
+        <input type="hidden" name="token" value="<?= e($token) ?>">
 
         <div>
           <label for="password" class="block text-sm font-medium text-gray-700 mb-1">

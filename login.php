@@ -63,22 +63,11 @@ include(__DIR__ . "/includes/inc-header.php");
       <i class="fas fa-lock text-indigo-500 mr-2"></i>Login
     </h1>
 
-    <!-- Success / Error Alerts -->
-    <?php if ($success): ?>
-      <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center">
-        <i class="fas fa-check-circle mr-2 text-green-500"></i>
-        <?= htmlspecialchars($success, ENT_QUOTES) ?>
-      </div>
-    <?php elseif ($error): ?>
-      <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg flex items-center">
-        <i class="fas fa-exclamation-circle mr-2 text-red-500"></i>
-        <?= htmlspecialchars($error, ENT_QUOTES) ?>
-      </div>
-    <?php endif; ?>
+    <?php renderAlerts($success, $error); ?>
 
     <!-- Login Form -->
     <form action="" method="POST" class="space-y-6">
-      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token, ENT_QUOTES) ?>">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
 
       <div class="relative">
         <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
@@ -90,7 +79,7 @@ include(__DIR__ . "/includes/inc-header.php");
           placeholder="Email address"
           required
           class="w-full h-12 pl-10 pr-4 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          value="<?= htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES) ?>"
+          value="<?= e($_POST['email'] ?? '') ?>"
         />
       </div>
 

@@ -8,16 +8,16 @@ if (in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1'])) {
     // Localhost
     define('DRIVER', 'mysql');
     define('HOST', 'localhost');
-    define('DATA', 'saas');
+    define('DATA', 'dev_saas');
     define('USER', 'root');
     define('PASS', '');
 } else {
     // Live server
     define('DRIVER', 'mysql');
     define('HOST', 'localhost');
-    define('DATA', 'themeltingpost');
-    define('USER', 'themeltingpost');
-    define('PASS', 'Ni96RJfrsE8oFDw');
+    define('DATA', '');
+    define('USER', '');
+    define('PASS', '');
 }
 
 /****************************************************

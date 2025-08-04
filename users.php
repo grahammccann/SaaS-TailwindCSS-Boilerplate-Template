@@ -20,7 +20,7 @@ $success  = '';
 
 // Handle POST (edit or delete)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    if (!isset($_POST['csrf_token']) || !validateCsrfToken($_POST['csrf_token'])) {
         $error = "Invalid CSRF token.";
     } else {
         // Edit
@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Delete
         if (isset($_POST['delete_user'])) {
             $user_id = intval($_POST['user_id']);
-            if ($user_id === $_SESSION['user_id']) {
+            if ($user_id === ($_SESSION['user_id'] ?? 0)) {
                 $error = "You cannot delete your own account.";
             } else {
                 $deleted = $db->delete("users","id",$user_id);
@@ -77,21 +77,12 @@ include(__DIR__ . "/includes/inc-header.php");
         <i class="fas fa-users text-indigo-600 mr-2"></i> Users
       </h1>
       <span class="inline-flex items-center bg-indigo-100 text-indigo-800 text-sm font-semibold px-3 py-1 rounded-full">
-        Users: <?= $userCount ?>
+        Users: <?= e($userCount) ?>
       </span>
     </div>
     <hr class="border-t-2 border-gray-200 mb-8">
 
-    <!-- Alerts -->
-    <?php if ($success): ?>
-      <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded mb-6 flex items-center">
-        <i class="fas fa-check-circle mr-2"></i> <?= htmlspecialchars($success) ?>
-      </div>
-    <?php elseif ($error): ?>
-      <div class="bg-red-100 border border-red-400 text-red-800 px-4 py-3 rounded mb-6 flex items-center">
-        <i class="fas fa-exclamation-triangle mr-2"></i> <?= htmlspecialchars($error) ?>
-      </div>
-    <?php endif; ?>
+    <?php renderAlerts($success, $error); ?>
 
     <!-- Desktop Table -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden hidden md:block">
@@ -111,10 +102,10 @@ include(__DIR__ . "/includes/inc-header.php");
           <tbody class="bg-white divide-y divide-gray-200">
             <?php foreach ($users as $u): ?>
               <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 text-sm text-gray-900"><?= $u['id'] ?></td>
-                <td class="px-6 py-4 text-sm text-gray-900"><?= htmlspecialchars($u['username']) ?></td>
-                <td class="px-6 py-4 text-sm text-gray-900"><?= htmlspecialchars($u['email']) ?></td>
-                <td class="px-6 py-4 text-center text-sm text-gray-900"><?= ucfirst($u['role']) ?></td>
+                <td class="px-6 py-4 text-sm text-gray-900"><?= e($u['id']) ?></td>
+                <td class="px-6 py-4 text-sm text-gray-900"><?= e($u['username']) ?></td>
+                <td class="px-6 py-4 text-sm text-gray-900"><?= e($u['email']) ?></td>
+                <td class="px-6 py-4 text-center text-sm text-gray-900"><?= e(ucfirst($u['role'])) ?></td>
                 <td class="px-6 py-4 text-center text-sm">
                   <?php if ($u['is_active']): ?>
                     <span class="inline-block px-2 py-0.5 text-xs font-semibold text-green-800 bg-green-100 rounded-full">Active</span>
@@ -122,23 +113,23 @@ include(__DIR__ . "/includes/inc-header.php");
                     <span class="inline-block px-2 py-0.5 text-xs font-semibold text-red-800 bg-red-100 rounded-full">Inactive</span>
                   <?php endif; ?>
                 </td>
-                <td class="px-6 py-4 text-sm text-gray-500"><?= date('j M Y, H:i', strtotime($u['created_at'])) ?></td>
+                <td class="px-6 py-4 text-sm text-gray-500"><?= e(date('j M Y, H:i', strtotime($u['created_at']))) ?></td>
                 <td class="px-6 py-4 text-right text-sm font-medium space-x-2">
                   <button
                     class="edit-button text-indigo-600 hover:text-indigo-800"
-                    data-id="<?= $u['id'] ?>"
-                    data-username="<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>"
-                    data-email="<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>"
-                    data-role="<?= $u['role'] ?>"
-                    data-active="<?= $u['is_active'] ?>"
+                    data-id="<?= e($u['id']) ?>"
+                    data-username="<?= e($u['username']) ?>"
+                    data-email="<?= e($u['email']) ?>"
+                    data-role="<?= e($u['role']) ?>"
+                    data-active="<?= $u['is_active'] ? '1' : '0' ?>"
                     title="Edit"
                   >
                     <i class="fas fa-edit"></i>
                   </button>
-                  <?php if ($u['id'] !== $_SESSION['user_id']): ?>
+                  <?php if ($u['id'] !== ($_SESSION['user_id'] ?? null)): ?>
                     <form method="POST" class="inline" onsubmit="return confirm('Delete this user?');">
-                      <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
-                      <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+                      <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
+                      <input type="hidden" name="user_id" value="<?= e($u['id']) ?>">
                       <button name="delete_user" class="text-red-600 hover:text-red-800" title="Delete">
                         <i class="fas fa-trash-alt"></i>
                       </button>
@@ -159,15 +150,15 @@ include(__DIR__ . "/includes/inc-header.php");
           <div class="pb-4">
             <div class="flex justify-between mb-1">
               <span class="text-sm text-gray-600">Username</span>
-              <span class="text-sm font-medium text-gray-900"><?= htmlspecialchars($u['username']) ?></span>
+              <span class="text-sm font-medium text-gray-900"><?= e($u['username']) ?></span>
             </div>
             <div class="flex justify-between mb-1">
               <span class="text-sm text-gray-600">Email</span>
-              <span class="text-sm text-gray-900"><?= htmlspecialchars($u['email']) ?></span>
+              <span class="text-sm text-gray-900"><?= e($u['email']) ?></span>
             </div>
             <div class="flex justify-between mb-1">
               <span class="text-sm text-gray-600">Role</span>
-              <span class="text-sm text-gray-900"><?= ucfirst($u['role']) ?></span>
+              <span class="text-sm text-gray-900"><?= e(ucfirst($u['role'])) ?></span>
             </div>
             <div class="flex justify-between">
               <span class="text-sm text-gray-600">Status</span>
@@ -181,17 +172,17 @@ include(__DIR__ . "/includes/inc-header.php");
           <div class="pt-4 flex space-x-3">
             <button
               class="edit-button flex-1 inline-flex justify-center items-center border border-indigo-600 text-indigo-600 text-sm font-medium px-3 py-2 rounded-md hover:bg-indigo-50 transition"
-              data-id="<?= $u['id'] ?>"
-              data-username="<?= htmlspecialchars($u['username'], ENT_QUOTES) ?>"
-              data-email="<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>"
-              data-role="<?= $u['role'] ?>"
-              data-active="<?= $u['is_active'] ?>"
+              data-id="<?= e($u['id']) ?>"
+              data-username="<?= e($u['username']) ?>"
+              data-email="<?= e($u['email']) ?>"
+              data-role="<?= e($u['role']) ?>"
+              data-active="<?= $u['is_active'] ? '1' : '0' ?>"
             >
               <i class="fas fa-edit mr-1"></i> Edit
             </button>
             <form method="POST" class="flex-1" onsubmit="return confirm('Delete this user?');">
-              <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
-              <input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+              <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
+              <input type="hidden" name="user_id" value="<?= e($u['id']) ?>">
               <button
                 name="delete_user"
                 class="w-full inline-flex justify-center items-center border border-red-600 text-red-600 text-sm font-medium px-3 py-2 rounded-md hover:bg-red-50 transition"
@@ -216,7 +207,7 @@ include(__DIR__ . "/includes/inc-header.php");
         </button>
       </div>
       <form id="editForm" method="POST" class="p-6 space-y-4">
-        <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf_token) ?>">
         <input type="hidden" name="user_id" id="modal_user_id">
 
         <div>

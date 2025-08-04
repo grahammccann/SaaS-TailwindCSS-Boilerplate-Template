@@ -1,5 +1,5 @@
--- Clean SQL Starter for SaaS Template (No Users)
--- Generated: 12 July 2025
+-- phpMyAdmin SQL Dump
+-- Database: `dev_saas`
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;

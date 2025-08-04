@@ -227,6 +227,27 @@ function redirect($url) {
 }
 
 /**
+ * Outputs alert HTML for success and error messages.
+ *
+ * @param string|null $success Success message.
+ * @param string|null $error   Error message.
+ */
+function renderAlerts($success = null, $error = null) {
+    if ($success) {
+        echo '<div class="flex items-center p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg mb-6">'
+           . '<i class="fas fa-check-circle text-green-500 mr-3"></i>'
+           . '<span>' . e($success) . '</span>'
+           . '</div>';
+    }
+    if ($error) {
+        echo '<div class="flex items-center p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg mb-6">'
+           . '<i class="fas fa-exclamation-circle text-red-500 mr-3"></i>'
+           . '<span>' . e($error) . '</span>'
+           . '</div>';
+    }
+}
+
+/**
  * Sends a contact form email.
  *
  * @param string $to   The recipient email address.
